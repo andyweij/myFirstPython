@@ -7,6 +7,7 @@ import csv
 from sentence_transformers import SentenceTransformer
 import time
 from langchain_google_genai import ChatGoogleGenerativeAI
+from env_settings import EnvSettings
 
 # url = 'https://drive.google.com/uc?id=11ISS45aO2ubNCGaC3Lvd3D7NT8Y7MeO8'
 # output = './movies.zip'
@@ -136,7 +137,8 @@ for hits_i, hits in enumerate(res):
 print('------------------\n')
 prompt = '你知道以下電影嗎 \n'
 print(prompt+askContent)
-llm = ChatGoogleGenerativeAI(model="gemini-pro")
+env_settings = EnvSettings()
+llm = ChatGoogleGenerativeAI(google_api_key=env_settings.GOOGLE_API_KEY,model="gemini-pro")
 result = llm.invoke(prompt+askContent)
 print(result.content)
 #
