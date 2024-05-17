@@ -101,7 +101,7 @@ if len(data_batch[0]) != 0:
 collection.flush()
 
 # Search for titles that closest match these phrases.
-search_terms = ['a man']
+search_terms = ['about fairy tales']
 
 
 # Search the database based on input text
@@ -138,7 +138,7 @@ print('------------------\n')
 prompt = '你知道以下電影嗎 \n'
 print(prompt+askContent)
 env_settings = EnvSettings()
-llm = ChatGoogleGenerativeAI(google_api_key=env_settings.GOOGLE_API_KEY,model="gemini-pro")
+llm = ChatGoogleGenerativeAI(google_api_key=env_settings.GOOGLE_API_KEY, model="gemini-pro")
 result = llm.invoke(prompt+askContent)
 print(result.content)
 #
