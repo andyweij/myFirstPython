@@ -1,5 +1,4 @@
 # %%
-
 import pymysql
 from pymilvus import connections, db, utility
 from pymilvus import FieldSchema, CollectionSchema, DataType, Collection
@@ -60,6 +59,9 @@ fields = [
 schema = CollectionSchema(fields=fields)
 # if utility.has_collection("tainanDB"):
 #     utility.drop_collection("tainanDB")
+
+users = utility.list_usernames()
+database=db.list_database()
 
 if not utility.has_collection("tainanDB"):
     collection = Collection(name='tainanDB', schema=schema)
