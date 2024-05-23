@@ -32,21 +32,23 @@ with conn.cursor() as cursor:
 
 DIMENSION = 384  # Embeddings size
 COUNT = 1000  # Number of vectors to insert
-
-# Inference Arguments
-BATCH_SIZE = 128
+BATCH_SIZE = 128  # Inference Arguments
 connections.connect(host='localhost', port='19530')
 # Search Arguments
 TOP_K = 10
 
 existing_databases = db.list_database()
 # Connect to Milvus Database
-if "tainanDB" not in existing_databases:
-    db.create_database("tainanDB")
-db.using_database("tainanDB")
+
+# if "tainanDB" not in existing_databases:
+#     db.create_database("tainanDB")
+# else:
+#     db.using_database("tainanDB")
 # print(db.list_database())
+db.using_database("default")
 
-
+# if not connections.get_connection_addr(alias=common_connection_alias):
+#     print(connections.get_connection_addr(alias=common_connection_alias))
 fields = [
     FieldSchema(name='id', dtype=DataType.INT64, is_primary=True, auto_id=True),
     FieldSchema(name='sid', dtype=DataType.INT64),
@@ -61,12 +63,12 @@ schema = CollectionSchema(fields=fields)
 #     utility.drop_collection("tainanDB")
 
 users = utility.list_usernames()
-database=db.list_database()
+database = db.list_database()
 
 if not utility.has_collection("tainanDB"):
     collection = Collection(name='tainanDB', schema=schema)
 else:
-    collection = Collection("tainanDB")
+    collection = Collection(name="tainanDB")
 
 # # Create an IVF_FLAT index for collection.
 index_params = {
@@ -102,7 +104,7 @@ if collection.num_entities == 0:
             data_batch[1].append(subject)
             data_batch[2].append(subItemName)
             data_batch[3].append(retuData)
-            if len(data_batch) % BATCH_SIZE == 0:
+            if len(data_batch[1]) % BATCH_SIZE == 0:
                 embed_insert(data_batch)
                 data_batch = [[], [], [], []]
             count += 1
