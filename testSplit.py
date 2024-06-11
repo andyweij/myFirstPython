@@ -13,20 +13,43 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 import pymysql
 
+db_settings = {
+    "host": "10.20.80.22",
+    "port": 3306,
+    "user": "sv",
+    "password": "eland4321",
+    "db": "tnc_1999_data",
+    "charset": "utf8mb4",
+}
+
+# 建立Connection物件
+conn = pymysql.connect(**db_settings)
+# 建立Cursor物件
+with conn.cursor() as cursor:
+    # 查詢資料SQL語法
+    command = "SELECT sid , subject , subItemName,retuData FROM tnc_1999_data.content2 where createTime >'2024-05-13'"
+    # 執行指令
+    cursor.execute(command)
+    # 取得所有資料
+    result = cursor.fetchall()
+    # print(result)
+
 env_settings = EnvSettings()
 embeddings = HuggingFaceEmbeddings(model_name="paraphrase-multilingual-MiniLM-L12-v2")
-vector_embedding = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
 connection_args = {
     "host": 'localhost',
     "port": '19530'
 }
 connections.connect(host='localhost', port='19530')
+
 fields = [
-    FieldSchema(name="pk", dtype=DataType.INT64, is_primary=True, auto_id=True),
-    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=768),
-    FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65535),
-    FieldSchema(name="file_chunk_id", dtype=DataType.INT64),
-    FieldSchema(name="file_id", dtype=DataType.INT64)
+    FieldSchema(name='id', dtype=DataType.INT64, is_primary=True, auto_id=True),
+    FieldSchema(name='sid', dtype=DataType.INT64),
+    FieldSchema(name='subject', dtype=DataType.VARCHAR, max_length=50000),
+    FieldSchema(name='subItemName', dtype=DataType.VARCHAR, max_length=10000),
+    FieldSchema(name='retuData', dtype=DataType.VARCHAR, max_length=50000),
+    FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=384),
 ]
 schema = CollectionSchema(fields, description="test collection")
 
@@ -38,22 +61,33 @@ index_params = {
     "params": {"M": 8, "efConstruction": 64},
     "index_name": "_default_idx_104"
 }
-target_collection.create_index(field_name="vector", index_params=index_params)
+target_collection.create_index(field_name="embedding", index_params=index_params)
 target_collection.load()
-chunk_content = '這段程式碼的主要功能是將長文本 chunk_content 分割成小塊，然後使用 Milvus 將每個小塊的嵌入向量存儲到指定的集合中。這樣可以實現高效的文本搜尋和相似度匹配功能。'
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=5, chunk_overlap=0)
-documents = text_splitter.create_documents(
-    texts=[chunk_content],
-    metadatas=[dict(file_chunk_id=1, file_id=10)]
-)
 
-vector_store = Milvus(
-    embedding_function=vector_embedding,
-    collection_name='test',
-    connection_args=connection_args,
-    auto_id=True
-)
-vector_store.add_documents(documents)
+text_splitter = RecursiveCharacterTextSplitter()
+all_documents = []
+for row in result:
+    sid, subject, subItemName, retuData = row
+    text = f"Subject: {subject}"
+    metadata = {"RetuData": retuData, "subItemName": subItemName, "sid": sid}
+
+    documents = text_splitter.create_documents(
+        texts=[subject],
+        metadatas=[dict(file_chunk_id=sid, file_id=sid, sid=sid, subject=subject,
+                        subItemName=subItemName,
+                        retuData=retuData, )],
+    )
+
+    vector_store = Milvus(
+        embedding_function=embeddings,
+        collection_name='test',
+        connection_args=connection_args,
+        auto_id=True,
+        primary_field="id",
+        text_field='subject',
+        vector_field="embedding"
+    )
+    vector_store.add_documents(documents)
 # bool_expr = "itemName like '%垃圾清運%'"
 # search_terms = '垃圾亂丟'
 # vector_db = Milvus(
